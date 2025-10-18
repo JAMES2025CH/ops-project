@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智體活動APS助理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* [您的 CSS 樣式... (此處省略，請保留您原本的 CSS) ...] */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #eef2f8; /* 更淺的背景色 */
+        }
+        /* ... 其他 CSS ... */
+        .subtitle {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-4xl mx-auto lesson-plan-container overflow-hidden">
+        
+        <header class="primary-color text-white p-6 md:p-8 -mx-1.5 -mt-1.5 rounded-t-lg shadow-md">
+            <h1 class="3xl font-bold mb-1">🧠 智體活動APS助理</h1>
+            <p class="subtitle">Version 2025 Beta (for Educational & Public Welfare Use) <span class="font-bold">Copyright © 鄭智宏</span></p>
+        </header>
+
+        <section class="p-6 md:p-8 space-y-6 bg-white border-b border-slate-200">
+            <h2 class="2xl font-semibold primary-text mb-4 border-l-4 border-indigo-500 pl-3">選擇課程設計要素</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="topic" class="block text-sm font-medium text-gray-700 mb-1">1. 活動主題</label>
+                    <select id="topic" class="input-style w-full p-3 rounded-lg text-gray-700 appearance-none bg-white">
+                        <option value="">-- 請選擇一個主題 --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="goal" class="block text-sm font-medium text-gray-700 mb-1">2. 主要訓練目標</label>
+                    <select id="goal" class="input-style w-full p-3 rounded-lg text-gray-700 appearance-none bg-white">
+                        <option value="">-- 請選擇一個目標 --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="equipment" class="block text-sm font-medium text-gray-700 mb-1">3. 使用的輔具</label>
+                    <input type="text" id="equipment" value="無" placeholder="預設: 無 (可更改為彈力帶、瑜珈球等)" class="input-style w-full p-3 rounded-lg text-gray-700">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <button id="recommendBtn" class="bg-yellow-500 text-white font-bold text-sm py-2 px-4 rounded-lg shadow-md hover:bg-yellow-600 transition duration-300 whitespace-nowrap flex items-center justify-center">
+                    <span id="recommendBtnText">✨ 推薦創意輔具</span>
+                    <div id="recommendLoading" class="loading-animation hidden"></div>
+                </button>
+                <div id="equipmentSuggestions" class="flex flex-wrap gap-2 text-sm min-h-[24px]">
+                </div>
+            </div>
+            
+            <button id="generateBtn" class="w-full flex items-center justify-center primary-color text-white font-extrabold text-lg py-4 px-4 rounded-lg shadow-xl hover:bg-blue-800 transition duration-300">
+                <div id="loadingIndicator" class="loading-animation hidden mr-2"></div>
+                <span id="btnText">🚀 一鍵生成教案</span>
+            </button>
+
+            <div id="error-message" class="text-red-600 text-sm mt-3 hidden bg-red-100 p-2 rounded-lg border border-red-300"></div>
+        </section>
+
+        <section class="p-6 md:p-8 bg-gray-50">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="2xl font-semibold primary-text border-l-4 border-indigo-500 pl-3">教案生成結果</h2>
+                <div class="flex space-x-2">
+                    <button id="copyBtn" class="bg-green-500 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition duration-300 hidden flex items-center justify-center">
+                        📋 複製教案內容
+                    </button>
+                    <button id="simplifyBtn" class="simplify-btn hidden">
+                        🧠 降階 (CDR 1 適用)
+                    </button>
+                </div>
+            </div>
+            
+            <div id="lessonPlanOutput" class="lesson-plan-container min-h-60 relative">
+                <p class="text-gray-500 italic" id="placeholder-text">輸入教案要素並點擊「一鍵生成教案」來產生您的專屬智體運動教案。</p>
+                <div id="generatedContent" class="hidden"></div>
+                <button id="toggleNotesBtn" class="collapse-btn w-full hidden">
+                    <span class="collapse-icon">⬇️</span> 顯示動作說明
+                </button>
+                <div id="notesContainer" class="mt-6 hidden">
+                    <div id="notesOutput" class="text-gray-700 space-y-3">
+                        <h3 class="lesson-section-title primary-text">動作說明</h3> 
+                        <div id="notesContent"></div>
+                    </div>
+                </div>
+                <div id="copySuccess" class="absolute top-0 right-0 m-4 px-3 py-1 bg-green-500 text-white rounded-md text-sm shadow-lg hidden opacity-0 transition-opacity duration-500">
+                    ✅ 複製成功！
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script type="module">
+        // ====================================================================
+        // == 核心資料庫 (已整合 35 個教案) ===============================
+        // ====================================================================
+        const docxLessonPlans = [
+             // [您的 20 個 CDR 教案... (此處省略，請保留您原本的資料)]
+            { name: "跟著做拍手操", topic: "CDR 1 適用", goal: "專注力, 手部協調", equipment: "無", description: "老師示範簡單的拍手動作(拍手、拍肩、拍腿)，長者跟著老師的節奏和動作進行模仿，並逐漸增加動作變化。", action_set: ["拍手", "拍肩", "拍腿", "交替拍手"] },
+            // ... 其他 19 個
+            { name: "ADL 生活功能拳 (CDR 0.5)", topic: "CDR 0.5 適用", goal: "生活技能, 記憶力, 肢體協調", equipment: "無", description: "老師帶領長者回憶日常生活中的動作（如刷牙、洗臉、穿衣），並設計成拳擊動作，長者依次做出動作。", action_set: ["刷牙 (動作)", "洗臉 (動作)", "穿衣 (動作)", "生活動作組合"] }
+        ];
+
+        const originalCoreData = [
+            // [您的 15 個原始教案... (此處省略，請保留您原本的資料)]
+            { name: "新年拳", topic: "節慶主題 (新年)", goal: "複雜專注力", equipment: "紅包/鞭炮圖卡", description: "結合新年走春、放鞭炮、領紅包等動作，訓練肢體協調與複雜專注力，增添節慶歡樂。", action_set: ["舞龍舞獅 (雙手畫圈)", "放鞭炮 (雙手拍手向下壓)", "拜年作揖 (雙手胸前作揖)", "發紅包 (雙手向前推出)"] },
+            // ... 其他 14 個
+            { name: "拍手踏步8下去", topic: "計算", goal: "計算能力", equipment: "無", description: "以8拍為一循環，老師拍手學生對應踏步，或老師拍踏混合，學生接續對應。訓練專注力與計算能力。", action_set: ["純拍手", "純踏步", "拍手加踏步", "接續對應動作"] }
+        ];
+
+        const coreData = [...originalCoreData, ...docxLessonPlans];
+
+        const coreGoals = [
+            "體適能及認知功能",
+            "生活上的運用",
+            "大腦功能區域的改善"
+        ];
+        
+        // ====================================================================
+        // UI 元素與狀態管理 (省略，請保留您原本的)
+        // ====================================================================
+        const topicSelect = document.getElementById('topic');
+        const goalSelect = document.getElementById('goal');
+        // ... (其他 UI 元素)
+        const simplifyBtn = document.getElementById('simplifyBtn');
+        
+        let lastGeneratedMarkdown = ""; 
+        let lastGeneratedNotes = ""; 
+        let lastGeneratedMusic = "";
+
+        // ====================================================================
+        // 日期與選擇器填充邏輯 (省略，請保留您原本的)
+        // ====================================================================
+        // function getMonthDifference...
+        // function sortTopicsByProximity...
+        // function populateSelectors...
+        populateSelectors(); // (保留呼叫)
+
+        // ====================================================================
+        // Gemini API 呼叫核心函數 (已修改為安全模式)
+        // ====================================================================
+        
+        // 關鍵修改 1: 
+        // 我們不再呼叫 Google，而是呼叫我們自己的「總機」(/api/generate)
+        // 這個相對路徑會自動指向 Vercel 上的 api/generate.js 檔案
+        const API_URL = "/api/generate";
+        
+        // 關鍵修改 2: 
+        // 移除 API_KEY，它現在安全地存在於伺服器上
+        // const API_KEY = "AIzaSy... (已刪除)"; 
+
+        // (已刪除 API 金鑰的控制台安全警告)
+       
+        const apiCache = new Map();
+
+        async function callStructuredApi(userQuery, generationConfig, systemInstruction = null) {
+            const cacheKey = JSON.stringify({ userQuery, generationConfig, systemInstruction });
+            if (apiCache.has(cacheKey)) {
+                return apiCache.get(cacheKey);
+            }
+
+            // 關鍵修改 3: 
+            // 移除 API_KEY 的檢查，前端不再需要它
+            /* (已刪除)
+            if (!API_KEY || API_KEY === "") {
+                throw new Error("API 金鑰未設定，請檢查程式碼中 API_KEY 變數。");
+            }
+            */
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                generationConfig: generationConfig
+            };
+            
+            if (systemInstruction) {
+                payload.systemInstruction = systemInstruction;
+            }
+
+            const maxRetries = 3;
+            let delay = 1000;
+            
+            // 關鍵修改 4:
+            // 移除 apiUrlWithKey，我們直接呼叫 API_URL
+            // const apiUrlWithKey = `${API_URL}?key=${API_KEY}`; (已刪除)
+            
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    // 關鍵修改 5:
+                    // fetch 的第一個參數從 apiUrlWithKey 改為 API_URL
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload) // 內容不變，直接傳給「總機」
+                    });
+
+                    if (!response.ok) {
+                        // 我們的「總機」會原樣回傳 Google 的錯誤，所以這裡邏輯不變
+                        throw new Error(`API Request Failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    // (後續的 JSON 解析邏輯完全不變)
+                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (jsonText) {
+                         try {
+                            const parsed = JSON.parse(jsonText);
+                            apiCache.set(cacheKey, parsed);
+                            return parsed; 
+                        } catch (e) {
+                            if (i < maxRetries - 1) {
+                                console.warn(`JSON parsing failed on attempt ${i + 1}. Retrying...`);
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                delay *= 2;
+                                continue; 
+                            }
+                            throw new Error("模型返回了無效的 JSON 格式。");
+                        }
+                    }
+
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; 
+                    } else {
+                        throw new Error("API 請求成功但內容為空，已達到最大重試次數。");
+                    }
+                } catch (error) {
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        throw new Error(`API 請求失敗或連線錯誤: ${error.message}`);
+                    }
+                }
+            }
+            throw new Error("達到最大重試次數，API 請求失敗。");
+        }
+
+        // ====================================================================
+        // [所有其他 Javascript 函數... (此處省略，請保留您原本的)]
+        // ====================================================================
+        // function setUiState...
+        // toggleNotesBtn.addEventListener...
+        // copyBtn.addEventListener...
+        // simplifyBtn.addEventListener...
+        // recommendBtn.addEventListener...
+        // generateBtn.addEventListener...
+        // function formatMarkdownToHtml...
+        // function formatNotesMarkdownToHtml...
+
+    </script>
+</body>
+</html>
